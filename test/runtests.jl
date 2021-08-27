@@ -130,7 +130,7 @@ println("> Log file: ", inpD["fout_log"])
 
 ### Read Catalog
 println("\nReading event list:")
-inpD["fin_evlist"] = joinpath(@__DIR__,inpD["fin_evlist"])
+#inpD["fin_evlist"] = joinpath(@__DIR__,inpD["fin_evlist"])
 @time qdf = read_evlist(inpD["fin_evlist"],inpD["evlist_fmt"])
 qid2qnum = Dict(zip(qdf.qid,qdf.qix))# maps event id to serial number
 show(qdf)
@@ -138,14 +138,14 @@ println()
 
 ### Read Stations
 print("\nReading station list")
-inpD["fin_stlist"] = joinpath(@__DIR__,inpD["fin_stlist"])
+#inpD["fin_stlist"] = joinpath(@__DIR__,inpD["fin_stlist"])
 @time sdf = read_stlist(inpD["fin_stlist"],inpD["stlist_fmt"])
 show(sdf)
 println()
 
 ### Read Xcor Data
 println("\nReading xcor data")
-inpD["fin_xcordat"] = joinpath(@__DIR__,inpD["fin_xcordat"])
+#inpD["fin_xcordat"] = joinpath(@__DIR__,inpD["fin_xcordat"])
 @time xdf = read_xcordata(inpD,qdf[!,[:qix,:qid,:qlat,:qlon]],sdf[!,[:sta,:slat,:slon]])
 show(xdf)
 println()
