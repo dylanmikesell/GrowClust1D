@@ -817,12 +817,12 @@ msresP = mean(resdf[ipp,:tdif].-resdf[ipp,:pdif])
 msresS = mean(resdf[iss,:tdif].-resdf[iss,:pdif])
 
 # print
-println(rmsP)
-println(msresP)
-println(npp)
-println(rmsS)
-println(msresS)
-println(nss)
+println("P-wave RMS: $rmsP")
+println("Mean signed residual: $msresP")
+println("Phases used: $npp")
+println("S-wave RMS: $rmsS")
+println("Mean signed residual: $msresS")
+println("Phases used: $nss")
 
 # show
 select!(resdf,[:qnum1,:qnum2,:qid1,:qid2,:tdif,:iphase,:pdif])
@@ -875,16 +875,20 @@ qrmsS = ifelse.(qndiffS.>0,sqrt.(qsseS./qndiffS),NaN64)
 
 ### Compute bootstrap statistics ###
 
-println("\nComputing bootstrap statistics...")
-
-# pre-allocate: defaults are NaN for errors, 0 for nb arrays
-boot_stdH, boot_madH = fill(NaN64,nq), fill(NaN64,nq)
-boot_stdZ, boot_madZ = fill(NaN64,nq), fill(NaN64,nq)
-boot_stdT, boot_madT = fill(NaN64,nq), fill(NaN64,nq)
-boot_nbL, boot_nbM, boot_nbH = zeros(Int64,nq), zeros(Float64,nq), zeros(Int64,nq)
 
 # loop over events
 if inpD["nboot"] > 1 # need to have run bootstrapping
+
+
+    println("\nComputing bootstrap statistics...")
+
+    # pre-allocate: defaults are NaN for errors, 0 for nb arrays
+    boot_stdH, boot_madH = fill(NaN64,nq), fill(NaN64,nq)
+    boot_stdZ, boot_madZ = fill(NaN64,nq), fill(NaN64,nq)
+    boot_stdT, boot_madT = fill(NaN64,nq), fill(NaN64,nq)
+    boot_nbL, boot_nbM, boot_nbH = zeros(Int64,nq), zeros(Float64,nq), zeros(Int64,nq)
+
+
     for ii = 1:nq
 
         # nbranch statistics
