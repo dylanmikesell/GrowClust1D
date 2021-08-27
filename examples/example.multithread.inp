@@ -9,7 +9,7 @@
 * evlist_fmt (0 = evlist, 1 = phase, 2 = GrowClust, 3 = HypoInverse)
 1
 * fin_evlist (event list file name)
-../test/data/in/evlist.txt
+data/in/evlist.txt
 *
 *******************************************
 ************   Station list   *************
@@ -17,7 +17,7 @@
 * stlist_fmt (0 = SEED channel, 1 = station name)
 1
 * fin_stlist (station list file name)
-../test/data/in/stlist.txt
+data/in/stlist.txt
 *
 *******************************************
 *************   XCOR data   ***************
