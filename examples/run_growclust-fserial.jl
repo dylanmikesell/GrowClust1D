@@ -415,8 +415,8 @@ println("\n\n\nStarting relocation estimates.")
         rxdf.tdif, rxdf.slat, rxdf.slon, rxdf.iphase,
         qdf.qlat, qdf.qlon, qdf.qdep .+ datum,
         ttTABs, nit, boxwid, degkm, irelonorm,
-        inpD["rmsmax"],rmedmax,distmax,distmax2,hshiftmax,vshiftmax
-    )
+        inpD["rmsmax"],rmedmax,distmax,distmax2,hshiftmax,vshiftmax,
+        nupdate)
     
     # save output
     if ib > 0
