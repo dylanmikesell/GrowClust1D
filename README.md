@@ -9,8 +9,8 @@ The examples/ directory has two julia codes that run a serial version of the pro
 
 or 
 
-`julia -t8 run_growclust-multithread.jl example.multithread.inp`
+`julia -t4 run_growclust-multithread.jl example.multithread.inp`
 
-In the second example, I specified the usage of 8 threads (you can decide based on your resources).
+In the second example, I specified the usage of 4 threads (you can decide based on your resources).
 
 [Note, to download a local copy of this repository, try `git clone https://github.com/dttrugman/GrowClust1D`.]
