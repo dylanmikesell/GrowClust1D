@@ -533,7 +533,7 @@ end
 # - qlats, qlons, qdeps: initial event locations
 # - ttTABS: P and S travel time interpolation objects
 # - nit, boxwid, degkm, irelonorm: difclust parameters
-# - rmsmax, rmedmax, distmax, distmax2, hshiftmax, vshifmax: cluster merge parameters
+# - rmsmax, rmedmax, distmax, distmax2, hshiftmax, vshifmax, torgdifmax: cluster merge parameters
 # - nupdate: counter for iteration update
 #
 # Returns:
@@ -545,7 +545,8 @@ function clustertree(pqix1::Vector{Int32},pqix2::Vector{Int32},ixx1::Vector{Int3
     tdif::Vector{Float64},slat::Vector{Float64},slon::Vector{Float64},iphase::Vector{Int8},
     qlats::Vector{Float64},qlons::Vector{Float64},qdeps::Vector{Float64},ttTABs,
     nit::Int64,boxwid::Float64,degkm::Float64,irelonorm::Int64,rmsmax::Float64,rmedmax::Float64,
-    distmax::Float64,distmax2::Float64,hshiftmax::Float64,vshiftmax::Float64,nupdate::Int64)
+    distmax::Float64,distmax2::Float64,hshiftmax::Float64,vshiftmax::Float64,torgdifmax::Float64,
+    nupdate::Int64)
 
     # setup parameters
     cdepmin = min(0.0,minimum(qdeps))
@@ -815,7 +816,8 @@ function clustertree(pqix1::Vector{Int32},pqix2::Vector{Int32},ixx1::Vector{Int6
     tdif::Vector{Float64},slat::Vector{Float64},slon::Vector{Float64},iphase::Vector{Int8},
     qlats::Vector{Float64},qlons::Vector{Float64},qdeps::Vector{Float64},ttTABs,
     nit::Int64,boxwid::Float64,degkm::Float64,irelonorm::Int64,rmsmax::Float64,rmedmax::Float64,
-    distmax::Float64,distmax2::Float64,hshiftmax::Float64,vshiftmax::Float64,nupdate::Int64)
+    distmax::Float64,distmax2::Float64,hshiftmax::Float64,vshiftmax::Float64,torgdifmax::Float64,
+    nupdate::Int64)
 
     # setup parameters
     cdepmin = min(0.0,minimum(qdeps))
