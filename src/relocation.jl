@@ -584,8 +584,8 @@ function clustertree(pqix1::Vector{Int32},pqix2::Vector{Int32},ixx1::Vector{Int3
     @inbounds for ip in Vector{Int32}(1:bnpair)
 
     # Progress
-    if mod(ip,nupdate)==0
-        println("Working on sorted pair: $ip/$bnpair")
+    if (mod(ip,nupdate)==0) & (Threads.threadid()==1)
+        println("Thread: ", Threads.threadid(), "--> Working on sorted pair: $ip/$bnpair")
     end
 
     # get event pair information
@@ -855,8 +855,8 @@ function clustertree(pqix1::Vector{Int32},pqix2::Vector{Int32},ixx1::Vector{Int6
     @inbounds for ip in Vector{Int32}(1:bnpair)
 
     # Progress
-    if mod(ip,nupdate)==0
-        println("Working on sorted pair: $ip/$bnpair")
+    if (mod(ip,nupdate)==0) & (Threads.threadid()==1)
+        println("Thread: ", Threads.threadid(), "--> Working on sorted pair: $ip/$bnpair")
     end
 
     # get event pair information
