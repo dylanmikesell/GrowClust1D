@@ -535,6 +535,7 @@ end
 # - nit, boxwid, degkm, irelonorm: difclust parameters
 # - rmsmax, rmedmax, distmax, distmax2, hshiftmax, vshifmax, torgdifmax: cluster merge parameters
 # - nupdate: counter for iteration update
+# - maxlink: maximum number of event pairs used to link clusters
 #
 # Returns:
 # - brlats, brlons, brdeps: relocated event locations
@@ -546,7 +547,7 @@ function clustertree(pqix1::Vector{Int32},pqix2::Vector{Int32},ixx1::Vector{Int3
     qlats::Vector{Float64},qlons::Vector{Float64},qdeps::Vector{Float64},ttTABs,
     nit::Int64,boxwid::Float64,degkm::Float64,irelonorm::Int64,rmsmax::Float64,rmedmax::Float64,
     distmax::Float64,distmax2::Float64,hshiftmax::Float64,vshiftmax::Float64,torgdifmax::Float64,
-    nupdate::Int64)
+    nupdate::Int64,maxlink::Int64)
 
     # setup parameters
     cdepmin = min(0.0,minimum(qdeps))
@@ -817,7 +818,7 @@ function clustertree(pqix1::Vector{Int32},pqix2::Vector{Int32},ixx1::Vector{Int6
     qlats::Vector{Float64},qlons::Vector{Float64},qdeps::Vector{Float64},ttTABs,
     nit::Int64,boxwid::Float64,degkm::Float64,irelonorm::Int64,rmsmax::Float64,rmedmax::Float64,
     distmax::Float64,distmax2::Float64,hshiftmax::Float64,vshiftmax::Float64,torgdifmax::Float64,
-    nupdate::Int64)
+    nupdate::Int64,maxlink::Int64)
 
     # setup parameters
     cdepmin = min(0.0,minimum(qdeps))
