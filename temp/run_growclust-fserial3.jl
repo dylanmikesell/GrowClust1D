@@ -347,6 +347,7 @@ rlons = qdf[:,:qlon]
 rdeps = qdf[:,:qdep] .+ datum # datum-adjust
 rorgs = zeros(Float64,nq) # origin time adjust
 rcids = Vector{Int32}(1:nq) # initialize each event into one cluster
+npair = -1
 
 # Setup bootstrapping matrices
 if inpD["nboot"] > 0
@@ -371,25 +372,11 @@ else
     const ixc = Vector{Int64}(1:nxc)
 end
 
-# parameter constants
-const rmsmax = inpD["rmsmax"]
-const cdepmin = min(0.0,min_qdep)
-const hshiftmaxD2 = (hshiftmax/degkm)^2 # in squared degrees
-const distmax22 = distmax^2 # in squared km
+function samplexcorr(xdf00,ixc,ngoodmin,iboot)
 
-
-# loop over each bootstrapping iteration
-Random.seed!(iseed)
-println("\n\n\nStarting relocation estimates.")
-@time for ib in 0:inpD["nboot"]    
-    
-    # timer for this thread
-    wc = @elapsed begin
-    
     # bootstrapping: resample data before run
-    wc2 = @elapsed begin
-    println("Initializing xcorr data and event pairs. Bootstrap iteration: $ib")
-    if ib > 0
+    nxc = length(ixc)
+    if iboot > 0
         
         # sample from original xcorr array
         isamp = sort(sample(ixc,nxc,replace=true)) # sorted to keep evpairs together
@@ -400,17 +387,9 @@ println("\n\n\nStarting relocation estimates.")
             rxdf[!,:ixx] = Vector{Int64}(1:nxc)
         end
 
-        # define event-based arrays
-        brlats = blatM[:,ib]
-        brlons = blonM[:,ib]
-        brdeps = bdepM[:,ib]
-        brorgs = borgM[:,ib]
-        brevids = qdf[!,:qid]
-        brcids = Vector{Int32}(1:nq) # initialize each event into one cluster
-
     # do not resample on first run
     else
-        
+            
         # use original xcorr array
         rxdf = xdf00
         if nxc < typemax(Int32)
@@ -419,14 +398,6 @@ println("\n\n\nStarting relocation estimates.")
             rxdf[!,:ixx] = Vector{Int64}(1:nxc)
         end
 
-        # precomputed event-based arrays
-        brlats = rlats
-        brlons = rlons
-        brdeps = rdeps
-        brorgs = rorgs
-        brevids = revids
-        brcids = rcids
-
     end
 
     # event pair arrays
@@ -434,17 +405,45 @@ println("\n\n\nStarting relocation estimates.")
         :gxcor=>sum=>:rfactor,:ixx=>first=>:ix1,:ixx=>last=>:ix2,:igood=>sum=>:ngood)
     
     # keep only good pairs, and sort
-    bpdf = bpdf[bpdf.ngood.>=inpD["ngoodmin"],[:qix1,:qix2,:rfactor,:ix1,:ix2]]
+    bpdf = bpdf[bpdf.ngood.>=ngoodmin,[:qix1,:qix2,:rfactor,:ix1,:ix2]]
     sort!(bpdf,:rfactor,rev=true)
-    bnpair = Int32(nrow(bpdf))
     show(bpdf)
+
+    # return
+    return bpdf.qix1, bpdf.qix2, bpdf.ix1, bpdf.ix2, 
+        rxdf.tdif, rxdf.slat, rxdf.slon, rxdf.iphase
+
+end
+
+# main function for clustering algorithm
+function clustertree(pqix1::Vector{Int32},pqix2::Vector{Int32},ixx1::Vector{Int32},ixx2::Vector{Int32},
+                    tdif::Vector{Float64},slat::Vector{Float64},slon::Vector{Float64},iphase::Vector{Int8},
+                    qlats::Vector{Float64},qlons::Vector{Float64},qdeps::Vector{Float64},
+                    ttTABs,nit::Int64,boxwid::Float64,degkm::Float64,irelonorm::Int64,
+                    rmsmax::Float64,rmedmax::Float64,distmax::Float64,distmax2::Float64,hshiftmax::Float64,vshiftmax::Float64)
+
     
+    # setup parameters
+    cdepmin = min(0.0,minimum(qdeps))
+    hshiftmaxD2 = (hshiftmax/degkm)^2 # in squared degrees
+    distmax22 = distmax^2 # in squared km
+
+    # array sizes
+    nq = length(qlats)
+    bnpair = length(pqix1)
+
+    # initialize relocated event arrays
+    brlats = copy(qlats)
+    brlons = copy(qlons)
+    brdeps = copy(qdeps)
+    brorgs = zeros(nq)
+    brcids = Vector{Int32}(1:nq)
     
     # initialize clustering tree arrays
     btlats = copy(brlats)
     btlons = copy(brlons)
     btdeps = copy(brdeps)
-    btorgs = copy(brorgs)
+    btorgs = zeros(nq)
     btnbranch = ones(Int32,nq)
 
     # dictionary with cid => event indices (note cid=qix on initialization)
@@ -452,10 +451,8 @@ println("\n\n\nStarting relocation estimates.")
 
     # dictionary with cid => event pair indices
     cid2pairD = Dict( qix => Vector{Int32}(findall(
-        (bpdf.qix1.==qix).|(bpdf.qix2 .== qix))) for qix in brcids) # cid=qix on initialization
+        (pqix1.==qix).|(pqix2 .== qix))) for qix in brcids) # cid=qix on initialization
 
-    end # ends elapsed time for setup
-    println("\nDone, elapsed time = $wc2")
 
     # loop over event pairs
     @inbounds for ip in Vector{Int32}(1:bnpair)
@@ -466,7 +463,7 @@ println("\n\n\nStarting relocation estimates.")
         end
           
         # get event pair information
-        qix1, qix2, rfactor = values(bpdf[ip,:])
+        qix1, qix2 = pqix1[ip], pqix2[ip]
         qc1, qc2 = brcids[qix1], brcids[qix2]
         if qc1 == qc2; continue; end # skip if in same cluster
         nb1, nb2 = btnbranch[qc1], btnbranch[qc2]
@@ -507,18 +504,18 @@ println("\n\n\nStarting relocation estimates.")
         end
 
         # count number of picks
-        npick = sum([bpdf[jj,:ix2]-bpdf[jj,:ix1]+1 for jj in linx])
+        npick = sum([ixx2[jj] - ixx1[jj] + 1 for jj in linx])
 
         # extract locations relative to centroid
         dqlat1, dqlon1 = zeros(npick),zeros(npick)
         dqdep1, dqorg1 = zeros(npick),zeros(npick)
         dqlat2, dqlon2 = zeros(npick),zeros(npick)
         dqdep2, dqorg2 = zeros(npick),zeros(npick)
-        phase12, slat12, slon12 = zeros(Int8,npick), zeros(npick), zeros(npick)
-        tdif = zeros(npick)
+        phase21, slat21, slon21 = zeros(Int8,npick), zeros(npick), zeros(npick)
+        tdif21 = zeros(npick)
         ix1 = 1 # start index for event pair in the arrays above
-        @inbounds for ilink in linx
-            pix1, pix2, jx1, jx2 = values(bpdf[ilink,[:qix1,:qix2,:ix1,:ix2]])
+        @inbounds for jj in linx
+            pix1, pix2, jx1, jx2 = pqix1[jj],pqix2[jj],ixx1[jj],ixx2[jj]
             ix2 = ix1 + (jx2 - jx1) # end-index in npick array
             if brcids[pix1]==qc1 # regular: event 1 in cluster 1, event 2 in cluster 2
                 dqlat1[ix1:ix2] .= brlats[pix1]-btlats[qc1]
@@ -529,7 +526,7 @@ println("\n\n\nStarting relocation estimates.")
                 dqdep2[ix1:ix2] .= brdeps[pix2]-btdeps[qc2]
                 dqorg1[ix1:ix2] .= brorgs[pix1]-btorgs[qc1]
                 dqorg2[ix1:ix2] .= brorgs[pix2]-btorgs[qc2]
-                tdif[ix1:ix2] .= rxdf.tdif[jx1:jx2] # keep the tdif with same sign
+                tdif21[ix1:ix2] .= tdif[jx1:jx2] # keep the tdif with same sign
             else # flipped: event 1 in cluster 2, event 2 in cluster 1
                 dqlat1[ix1:ix2] .= brlats[pix2]-btlats[qc1]
                 dqlat2[ix1:ix2] .= brlats[pix1]-btlats[qc2]
@@ -539,11 +536,11 @@ println("\n\n\nStarting relocation estimates.")
                 dqdep2[ix1:ix2] .= brdeps[pix1]-btdeps[qc2]
                 dqorg1[ix1:ix2] .= brorgs[pix2]-btorgs[qc1]
                 dqorg2[ix1:ix2] .= brorgs[pix1]-btorgs[qc2]
-                tdif[ix1:ix2] .= -rxdf.tdif[jx1:jx2] # flip the tdif
+                tdif21[ix1:ix2] .= -tdif[jx1:jx2] # flip the tdif
             end
-            slat12[ix1:ix2] .= rxdf.slat[jx1:jx2] # stays same
-            slon12[ix1:ix2] .= rxdf.slon[jx1:jx2] # stays same
-            phase12[ix1:ix2] .= rxdf.iphase[jx1:jx2] # stays same
+            slat21[ix1:ix2] .= slat[jx1:jx2] # stays same
+            slon21[ix1:ix2] .= slon[jx1:jx2] # stays same
+            phase21[ix1:ix2] .= iphase[jx1:jx2] # stays same
             ix1 = ix2 + 1 # update start index in npick array
         end
         
@@ -556,21 +553,21 @@ println("\n\n\nStarting relocation estimates.")
         if irelonorm == 1
             clat1, clon1, cdep1, clat2, clon2, cdep2, 
                 cdist, torgdif, resid, rms, rmed, resol = difclust1(
-                clat0,clon0,cdep0,tdif,phase12, slat12, slon12,
+                clat0,clon0,cdep0,tdif21,phase21, slat21, slon21,
                 dqlat1, dqlon1, dqdep1, dqorg1, dqlat2, dqlon2, dqdep2, dqorg2,
                 ttTABs,boxwid,nit,degkm)
         elseif irelonorm == 2
             clat1, clon1, cdep1, clat2, clon2, cdep2, 
                 cdist, torgdif, resid, rms, rmed, resol = difclust2(
-                clat0,clon0,cdep0,tdif,phase12, slat12, slon12,
+                clat0,clon0,cdep0,tdif21,phase21, slat21, slon21,
                 dqlat1, dqlon1, dqdep1, dqorg1, dqlat2, dqlon2, dqdep2, dqorg2,
                 ttTABs,boxwid,nit,degkm)
         else
             clat1, clon1, cdep1, clat2, clon2, cdep2, 
-            cdist, torgdif, resid, rms, rmed, resol = difclust3(
-                clat0,clon0,cdep0,tdif,phase12, slat12, slon12,
-                dqlat1, dqlon1, dqdep1, dqorg1, dqlat2, dqlon2, dqdep2, dqorg2,
-                ttTABs,boxwid,nit,degkm)
+                cdist, torgdif, resid, rms, rmed, resol = difclust3(
+                    clat0,clon0,cdep0,tdif21,phase21, slat21, slon21,
+                    dqlat1, dqlon1, dqdep1, dqorg1, dqlat2, dqlon2, dqdep2, dqorg2,
+                    ttTABs,boxwid,nit,degkm)
         end
 
         # careful with cluster mergers near surface
@@ -582,9 +579,6 @@ println("\n\n\nStarting relocation estimates.")
         if abs(torgdif > torgdifmax)
             println("LARGE ORIGIN TIME CORRECTION: $torgdif")
             println("Likely xcor data or event list error!")
-            qid1, qid2 = revids[qix1], revids[qix2]
-            println("Current pair: $qid1 $qid2")
-            show(bestdf)
             exit()
         end
 
@@ -685,7 +679,38 @@ println("\n\n\nStarting relocation estimates.")
         #btorgs[iclust] .= 0.0 # always zero, never updated
         end
         
-    end
+    end # ---- end of clustering loop
+    
+    # return results
+    bnb = btnbranch[brcids]
+    return brlats, brlons, brdeps, brorgs, brcids, bnb
+end
+
+
+
+# loop over each bootstrapping iteration
+Random.seed!(iseed)
+println("\n\n\nStarting relocation estimates.")
+@time for ib in 0:inpD["nboot"]    
+    
+    # timer for this thread
+    wc = @elapsed begin
+
+    # resample xcorr data, compile event pairs
+    println("Initializing xcorr data and event pairs. Bootstrap iteration: $ib")
+    wc2 = @elapsed begin
+    pqix1, pqix2, ixx1, ixx2, tdif, slat, slon, ipp = samplexcorr(xdf00,ixc,inpD["ngoodmin"],ib)
+    if ib == 0; global npair = length(pqix1); end
+    end # ends elapsed time for setup
+    println("\nDone, elapsed time = $wc2")
+    
+    # run clustering
+    brlats, brlons, brdeps, brorgs, brcids, bnb = clustertree(
+        pqix1, pqix2, ixx1, ixx2, tdif, slat, slon, ipp,
+        qdf.qlat, qdf.qlon, qdf.qdep .+ datum,
+        ttTABs, nit, boxwid, degkm, irelonorm,
+        inpD["rmsmax"],rmedmax,distmax,distmax2,hshiftmax,vshiftmax
+    )
     
     # save output
     if ib > 0
@@ -700,7 +725,6 @@ println("\n\n\nStarting relocation estimates.")
         rdeps .= brdeps
         rorgs .= brorgs
         rcids .= brcids
-        global npair = bnpair
     end
         
     # completion

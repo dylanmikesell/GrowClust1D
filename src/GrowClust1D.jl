@@ -14,6 +14,6 @@ export check_gcinp, check_auxparams, read_gcinp
 
 # exports from relocation
 include("relocation.jl")
-export evalrms, difclust1, difclust2, difclust3, map_distance, robomean
+export evalrms, difclust1, difclust2, difclust3, map_distance, robomean, clustertree
 
 end # module

@@ -23,7 +23,7 @@ const hshiftmax = 2.0        # maximum permitted horizontal cluster shifts (km)
 const vshiftmax = 2.0        # maximum permitted vertical cluster shifts (km)
 const rmedmax = 0.05         # maximum median absolute tdif residual to join clusters
 const maxlink = 10           # use 10 best event pairs to relocate (optimize later...)
-const nupdate = 100         # update progress every nupdate pairs - NEW
+const nupdate = 10000         # update progress every nupdate pairs - NEW
    
 # ------- Relative Relocation subroutine parameters -------------
 const boxwid = 3. # initial "shrinking-box" width (km)

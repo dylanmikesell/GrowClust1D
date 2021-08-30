@@ -1,7 +1,7 @@
 ************************ Input files ************************
      control file:   example.serial.inp
-       event list:   ../test/data/in/evlist.txt
-     station list:   ../test/data/in/stlist.txt
+       event list:   data/in/evlist.txt
+     station list:   data/in/stlist.txt
      xcordat file:   data/in/xcordata.txt
      velocity mdl:   data/in/vzmodel.txt
 
