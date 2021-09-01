@@ -374,7 +374,6 @@ end
 
 
 #### loop over each bootstrapping iteration
-Random.seed!(iseed)
 println("\n\n\nStarting relocation estimates.")
 @time for ib in 0:inpD["nboot"]    
     
@@ -382,6 +381,7 @@ println("\n\n\nStarting relocation estimates.")
     wc = @elapsed begin
     
     # bootstrapping: resample data before run
+    Random.seed!(iseed + ib) # different for each run
     wc2 = @elapsed begin
     println("Initializing xcorr data and event pairs. Bootstrap iteration: $ib")
     if ib > 0 # sample with replacement from original xcorr array
@@ -509,7 +509,7 @@ show(rdf)
 println()
 
 
-### Compute Misfits - much better w/ otime adjustment ###
+### Compute Misfits - w/ otime adjustment ###
 
 println("\nComputing misfits...")
 

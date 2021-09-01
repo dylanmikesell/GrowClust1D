@@ -391,6 +391,7 @@ println("[Progress tracked on Thread 1 only.]")
     end
     
     # bootstrapping: resample data before run
+    Random.seed!(iseed + ib) # different for each run
     wc2 = @elapsed begin
     if ib > 0 # sample with replacement from original xcorr array
         isamp = sort(sample(ixc,nxc,replace=true)) # sorted to keep evpairs together
@@ -521,7 +522,7 @@ show(rdf)
 println()
 
 
-### Compute Misfits - much better w/ otime adjustment ###
+### Compute Misfits - w/ otime adjustment ###
 
 println("\nComputing misfits...")
 
