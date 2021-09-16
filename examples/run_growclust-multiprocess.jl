@@ -383,7 +383,7 @@ bdepM = SharedArray(repeat(qdep,1,nboot+1))
 borgM = SharedArray(zeros(Float64,(nq,nboot+1)))
 bnbM = SharedArray(zeros(Int64,(nq,nboot+1)))
 bcidM = SharedArray(repeat(Vector{Int32}(1:nq),1,nboot+1))
-bnpairs = SharedArray(zeros(Int64,nboot+1))
+bnpairM = SharedArray(zeros(Int64,nboot+1))
 
 # base xcor dataframe to sample from
 xdf00 = select(xdf,[:qix1,:qix2,:slat,:slon,:tdif,:iphase,:igood])
@@ -456,6 +456,7 @@ println("\n\n\nStarting relocation estimates, workers=",workers())
         borgM[:,ib] .= brorgs
         bnbM[:,ib] .= bnbs
         bcidM[:,ib] .= brcids
+        bnpairM[ib] = nrow(bpdf)
     else
         blatM[:,nboot+1] .= brlats
         blonM[:,nboot+1] .= brlons
@@ -463,6 +464,7 @@ println("\n\n\nStarting relocation estimates, workers=",workers())
         borgM[:,nboot+1] .= brorgs
         bnbM[:,nboot+1] .= bnbs
         bcidM[:,nboot+1] .= brcids
+        bnpairM[nboot+1] = nrow(bpdf)
     end
         
     # completion
@@ -481,7 +483,7 @@ rlons = blonM[:,nboot+1]
 rdeps = bdepM[:,nboot+1]
 rorgs = borgM[:,nboot+1]
 rcids = bcidM[:,nboot+1]
-npair = bnpairs[nboot+1]
+npair = bnpairM[nboot+1]
 
 ### Finalize Clustering Trees ###
 
